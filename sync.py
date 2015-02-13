@@ -4,9 +4,14 @@ import argparse
 import json
 import ConfigParser
 import getpass
+import os
 
+base_path = os.path.dirname(__file__)
 config = ConfigParser.ConfigParser()
-config.read('wowiupdater.cfg')
+config_file = os.path.join(base_path, 'wowiupdater.cfg')
+addon_file = os.path.join(base_path, 'addonlist')
+
+config.read(config_file)
 
 try:
     username = config.get('Login', 'username')
@@ -18,17 +23,23 @@ except ConfigParser.NoSectionError:
     config.set('Login', 'username', username)
     config.set('Login', 'password', password)
 
-    with open('wowiupdater.cfg', 'wb') as configfile:
+    with open(config_file, 'wb') as configfile:
         config.write(configfile)
 
 wowiapi = WoWIApi(username, password)
 
 try:
-    f = open('addonlist')
+    f = open(addon_file)
     addons = json.loads(f.read(), 'UTF-8')
     f.close()
 except IOError, ValueError:
     addons = {}
+
+
+def save_addon_list():
+    f = open(addon_file, 'w')
+    json.dump(addons, f)
+    f.close()
 
 
 def sync_addon(args):
@@ -37,9 +48,7 @@ def sync_addon(args):
         if addons[args.addon_name]['curse_name'] == '':
             curse_name = raw_input('Curse slug addon name missing please enter it (its in the url, e.g. flight-map-enhanced): ')
             addons[args.addon_name]['curse_name'] = curse_name
-            f = open('addonlist', 'w')
-            json.dump(addons, f)
-            f.close()
+            save_addon_list()
     else:
         print "Addon not found"
         exit()
@@ -49,12 +58,6 @@ def sync_addon(args):
     wowiapi.update_addon(addons[args.addon_name], update_info)
     addons[args.addon_name]['latest_file'] = update_info['file_name']
     save_addon_list()
-
-
-def save_addon_list():
-    f = open('addonlist', 'w')
-    json.dump(addons, f)
-    f.close()
 
 
 #saving latest file to easily compare for new version, also the changelog so the new one can be appended on top
