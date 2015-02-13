@@ -1,1 +1,2 @@
 html2bbcode==2.3.2
+requests==2.5.1
